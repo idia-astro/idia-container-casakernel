@@ -1,6 +1,6 @@
 # CasaPy-Kernel
 
-A [Jupyter](http://jupyter.org/) kernel for [CASA](https://casa.nrao.edu/) using a Singularity container.  Based on the prototype, [jupyter-casa](https://github.com/aardk/jupyter-casa).
+A [Jupyter](http://jupyter.org/) kernel for [CASA](https://casa.nrao.edu/) using a Singularity container.  Based on the kernel [jupyter-casa](https://github.com/aardk/jupyter-casa).
 
 ## Background
 
