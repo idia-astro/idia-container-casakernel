@@ -31,8 +31,10 @@ A step by step series of examples that tell you have to get a development env ru
 
 Create a singularity container and bootstrap it: 
 
+```
 singularity create --size 8192 jupyter-casa.img
 singularity bootstrap jupyter-casa.img jupyter-casa-build.def
+```
 
 You can execute a command in the shell or open an interactive session:
 
