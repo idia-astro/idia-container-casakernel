@@ -78,7 +78,7 @@ Include: software-properties-common
 
 	# --- Build CasaCORE ---
 	cd $CASAROOT/casacore; mkdir build; cd build	
-	cmake .. -DCMAKE_BUILD_TYPE=$CASA_BUILD_TYPE -DCMAKE_INSTALL_PREFIX=$CASAROOT/$CASA_ARCH -DBoost_NO_BOOST_CMAKE=1 -DCASA_BUILD=1 -DUseCasacoreNamespace=1 -DBUILD_PYTHON=1 -DDATA_DIR=$CASAROOT/data -DCFITSIO_INCLUDE_DIR=/usr/include -DCXX11=1
+	cmake .. -DCASA_BUILD=1 -DCMAKE_BUILD_TYPE=$CASA_BUILD_TYPE -DCMAKE_INSTALL_PREFIX=$CASAROOT/$CASA_ARCH -DBoost_NO_BOOST_CMAKE=1 -DUseCasacoreNamespace=1 -DBUILD_PYTHON=1 -DDATA_DIR=$CASAROOT/data -DCFITSIO_INCLUDE_DIR=/usr/include -DCXX11=1
 	make -j $HOST_CPU_CORES &> compileLink.log || cat compileLink.log | strings | grep Error compileLink.log | grep -v Scanning | grep -v Building | grep -v Built | grep -v Linking
 	make test &> test.log || cat test.log | strings | grep Failed test.log
 	make install &> install.log || grep Error install.log  | grep -v Installing | grep -v Up-to-date | grep -v tFITSErrorImage
@@ -88,14 +88,13 @@ Include: software-properties-common
 	cd $CASAROOT/code/
 	wget https://raw.githubusercontent.com/grimmer0125/tmp/master/casacodereduce3.diff
 	git apply casacodereduce3.diff
-	mkdir build -p
-	cd build	
-	#cmake .. -DCMAKE_BUILD_TYPE=$CASA_BUILD_TYPE -DUSE_ALMAWVR=True -DINTERACTIVE_ITERATION=1 -DCMAKE_INSTALL_PREFIX=$CASAROOT/$CASA_ARCH 2>&1 | tee cmake.log
+	mkdir build -p; cd build	
+	#cmake .. -DCMAKE_BUILD_TYPE=$CASA_BUILD_TYPE -DUSE_ALMAWVR=True -DINTERACTIVE_ITERATION=1 -DUseCasacoreNamespace="NO" -DCMAKE_INSTALL_PREFIX=$CASAROOT/$CASA_ARCH 2>&1 | tee cmake.log
 	cmake .. -DCMAKE_BUILD_TYPE=$CASA_BUILD_TYPE -DUseCrashReporter=0 -DBoost_NO_BOOST_CMAKE=1 '-DEXTRA_C_FLAGS=-DPG_PPU' -DUseCasacoreNamespace=1 -DUSE_ALMAWVR=True -DCMAKE_INSTALL_PREFIX=$CASAROOT/$CASA_ARCH 2>&1 | tee cmake.log
 	cp /usr/local/casa/externals/release-1.7.0.tar.gz /usr/local/casa/code/build/gtest/googletest-release-1.7.0.tar.gz
 	make -j $HOST_CPU_CORES &> compileLink.log || cat compileLink.log | strings | grep Error compileLink.log | grep -v Scanning | grep -v Building | grep -v Built | grep -v Linking
 	make test &> test.log || cat test.log | strings | grep Failed test.log
-	sudo make install &> install.log || grep Error install.log  | grep -v Installing | grep -v Up-to-date | grep -v tFITSErrorImage
+	make install &> install.log || grep Error install.log  | grep -v Installing | grep -v Up-to-date | grep -v tFITSErrorImage
 
 
 	# ================================================================================
@@ -104,27 +103,28 @@ Include: software-properties-common
 	source $CASAROOT/casainit.sh
 	cd $CASAROOT/gcwrap; mkdir build; cd build
 	cmake .. -Darch=$CASA_ARCH -DCMAKE_INSTALL_PREFIX=$CASAROOT/$CASA_ARCH -DPYTHON_LIBNAME=2.7 -DCMAKE_BUILD_TYPE=$CASA_BUILD_TYPE -DUseCrashReporter=0 2>&1 | tee cmake.log
-	cmake .. -Darch=$CASA_ARCH -DCMAKE_INSTALL_PREFIX=$CASAROOT/$CASA_ARCH -DPYTHON_LIBNAME=2.7 -DCMAKE_BUILD_TYPE=$CASA_BUILD_TYPE -DUseCasacoreNamespace=1 -DCASA_BUILD=1 
-	cmake .. -Darch=$CASA_ARCH -DCMAKE_INSTALL_PREFIX=$CASAROOT/$CASA_ARCH -DPYTHON_LIBNAME=2.7 -DCMAKE_BUILD_TYPE=$CASA_BUILD_TYPE -DCASA_BUILD=1 -DUseCrashReporter=0
 	# Note: cmake error created if including -DINTERACTIVE_ITERATION=1 in above due to leaving it out in casacode, may need to go back and turn it on in casacode if it turns out to be essential - relates to synthesis imaging 
 	make -j $HOST_CPU_CORES &> compileLink.log || cat compileLink.log | strings | grep Error compileLink.log | grep -v Scanning | grep -v Building | grep -v Built | grep -v Linking
 	make install &> install.log || grep Error install.log  | grep -v Installing | grep -v Up-to-date
 
 
 	# --- Build ASAP ---
+	# necessary with version 5?
 	cd $CASAROOT/asap; mkdir build; cd build
 	cmake .. -Darch=$CASA_ARCH -DCMAKE_INSTALL_PREFIX=$CASAROOT/$CASA_ARCH -DPYTHON_LIBNAME=2.7 -DCMAKE_BUILD_TYPE=$CASA_BUILD_TYPE 2>&1 | tee cmake.log
 	make -j $HOST_CPU_CORES &> compileLink.log || cat compileLink.log | strings | grep Error compileLink.log | grep -v Scanning | grep -v Building | grep -v Built | grep -v Linking
-	make test &> test.log || cat test.log | strings | grep Failed test.log
 	make install &> install.log || grep Error install.log  | grep -v Installing | grep -v Up-to-date | grep -v tFITSErrorImage
 
 
 	# --- Post-Build Tasks ---
+	export CASAROOT=/usr/local/casa
+	export CASA_ARCH=linux64
 	export CASAPATH="$CASAROOT $CASA_ARCH"
 	source ${CASAROOT}/casainit.sh
 	sed -i -e "s/usr\/lib64\/casapy/usr/" $CASAROOT/linux64/bin/casa
-	sed -i -e "s/2\.6/2\.7/" $CASAROOT/linux64/bin/casa
 
+	# sed -i -e "s/2\.6/2\.7/" $CASAROOT/linux64/bin/casa
+	
 
 	# --- Jupyter Setup --- 	
 	groupadd -g 1000 jupyter
@@ -136,15 +136,22 @@ Include: software-properties-common
 	mkdir -p /home/jupyter/.local/share/jupyter/runtime
 	mkdir -p /home/jupyter/.local/share/jupyter/nbextensions
 
-	cd /home/jupyter/
 
-	git clone https://github.com/idia-astro/idia-container-casakernel.git
+	# --- WSClean Setup --- 	
+	apt-get install wsclean 
+	
+	
+	# --- Custom CASA environment necessary for kernel & cli interface ---
+	git clone https://github.com/idia-astro/idia-container-casakernel.git casa_kernel_files
 
-	cp idia-container-casakernel/python/casapy_kernel/* /home/jupyter/.local/lib/python2.7/site-packages/casapy
-	cp idia-container-casakernel/jupyter/kernels/casapy/kernel.json /home/jupyter/.local/share/jupyter/kernels/casapy/
-	cp idia-container-casakernel/python/jupyter_notebook_config.py /home/jupyter/.jupyter/
-	cp idia-container-casakernel/python/create_font_cache.py /home/jupyter/
-
+	cp casa_kernel_files/python/casapy_kernel/* /home/jupyter/.local/lib/python2.7/site-packages/casapy
+	cp casa_kernel_files/jupyter/kernels/casapy/kernel.json /home/jupyter/.local/share/jupyter/kernels/casapy/
+	cp casa_kernel_files/python/jupyter_notebook_config.py /home/jupyter/.jupyter/
+	cp casa_kernel_files/python/create_font_cache.py /home/jupyter/
+	cp casa_kernel_files/python/casa_stack_manip.py $CASAROOT/linux64/lib/python2.7/ 
+	cp casa_kernel_files/python/casapy.py $CASAROOT/linux64/lib/python2.7/ 
+	cp casa_kernel_files/python/casatasks.py $CASAROOT/linux64/lib/python2.7/
+	
 	# Bind through IDIA volumes to the container
 	mkdir /users /scratch /data
 
@@ -160,17 +167,18 @@ Include: software-properties-common
 	files/create_font_cache.py /home/jupyter/
 
 %environment
-	export PYTHONPATH="/home/jupyter/.local/lib/python2.7/site-packages/:/usr/local/lib/python2.7/site-packages:/usr/local/casa/linux64/python/2.7"
-	export LD_LIBRARY_PATH="/usr/local/casa/linux64/lib"
-	export CASAPATH="/usr/local/casa/ linux64"
-	export PATH="/usr/local/casa/linux64/bin:$PATH"
+	# Custom environment shell code should follow
+	export CASAROOT=/usr/local/casa
+	export CASA_ARCH=linux64
+	export PYTHONPATH="/home/jupyter/.local/lib/python2.7/site-packages/:/usr/local/lib/python2.7/site-packages:$CASAROOT/$CASA_ARCH/lib/python2.7/:$PYTHONPATH"
+	export PATH="$CASAROOT/$CASA_ARCH/bin:$PATH"
+	export LD_LIBRARY_PATH="$CASAROOT/$CASA_ARCH/lib:$LD_LIBRARY_PATH"
+	export CASAPATH="$CASAROOT $CASA_ARCH"
 	QT_X11_NO_MITSHM=1
-	export LC_ALL=C
-	# OpenMP is used to parallelize certain parts of the imaging code and will use, by 
-	# default, all the available cores on a given machine. Performance has declining  
-	# returns and can cause memory issues, use OMP_NUM_THREADS to limit the number of 
-	# cores used by OMP.  
-	export OMP_NUM_THREADS=4
+	unset XDG_RUNTIME_DIR
+
+	# Set OMP_NUM_THREADS as OpenMP uses all cores by default for certain imaging operations
+	# export OMP_NUM_THREADS=4
 
 %runscript 
 	#!/bin/sh
