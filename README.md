@@ -2,6 +2,15 @@
 
 A [Jupyter](http://jupyter.org/) kernel for [CASA](https://casa.nrao.edu/) using a Singularity container.  Based on the kernel [jupyter-casa](https://github.com/aardk/jupyter-casa).
 
+## Updates - January 15, 2017
+Changes and bug fixes:
+
+1. update to CASA from 4.7.0 to 5.1.0
+2. refactor casacode, update for python 2.7 and ipython 0.1.0 to 6.1.0
+3. introduce casatasks so that casa tasks are available as python modules (i.e. import casatasks in script)
+4. enable use-case to run casa scripts from command line
+5. enable python syntax highlighting (codemirror) 
+
 ## Background
 
 The use of iPython and Jupyter notebooks has proven to be extremely useful in data-intensive scientific research, since it allows scientists and analysts to easily create and share code and results in an intuitive, complete, and open manner.  In the field of radio astronomy, the software package CASA contains a vast array of code, and is indispensable for many projects.  However, CASA has a complexity code base with a large number of dependencies.  This creates challenges when deployed in a variety of different user environments and when used for many different purposes.  
