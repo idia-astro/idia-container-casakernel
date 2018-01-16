@@ -58,10 +58,10 @@ Now that we have build our container, we can set it up as a [jupyter kernel](htt
 
 1. **As a Jupyter kernel for CASA**
 
-...Copy the `kernel.json` file to your home directory:
-...`mkdir -p $HOME/.local/share/jupyter/kernels/jupyter-casa-kernel/`
-...`cp idia-container-casakernel/jupyter/kernels/casapy/kernel.json ~/.local/share/jupyter/kernels/jupyter-casa-kernel/`
-...Then start a jupyter notebook session and choose the new kernel, 'jupyter-casa-kernel'.
+    Copy the `kernel.json` file to your home directory:
+    `mkdir -p $HOME/.local/share/jupyter/kernels/jupyter-casa-kernel/`
+    `cp idia-container-casakernel/jupyter/kernels/casapy/kernel.json ~/.local/share/jupyter/kernels/jupyter-casa-kernel/`
+    Then start a jupyter notebook session and choose the new kernel, 'jupyter-casa-kernel'.
 
 2. **Using the embedded CASA terminal** -- 
 
