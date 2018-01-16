@@ -2,14 +2,17 @@
 
 A [Jupyter](http://jupyter.org/) kernel for [CASA](https://casa.nrao.edu/) using a Singularity container.  Based on the kernel [jupyter-casa](https://github.com/aardk/jupyter-casa).
 
-## Updates - January 15, 2017
+## Updates
 Changes and bug fixes:
 
-1. update to CASA from 4.7.0 to 5.1.0
-2. refactor casacode, update for python 2.7 and ipython 0.1.0 to 6.1.0
-3. introduce casatasks so that casa tasks are available as python modules (i.e. import casatasks in script)
-4. enable use-case to run casa scripts from command line
-5. enable python syntax highlighting (codemirror) 
+January 15, 2017:
+1. update to CASA from `4.7.0` to `5.1.0`
+1. refactor casacode for compatibility with `python 2.7` (from `2.6`) and `ipython 6.1.0` (`0.1.0`)
+1. includes `WSclean 2.5` (command line only, no notebook support)
+1. introduce `casatasks` module (i.e. one can include `import casatasks` rather than starting a CASA session)
+1. enable casa interactive shell from the command line 
+1. enable command line script use-case (i.e. `casa -c script.py`)
+1. enable python syntax highlighting
 
 ## Background
 
@@ -30,28 +33,41 @@ These instructions will get you a copy of the project up and running on your loc
 
 ### Prerequisites
 
-What things you need to install the software and how to install them:
+You will need to install Singularity to build the container:
 
-* [SINGULARITY](singularity.lbl.gov/)
+* [Singularity](singularity.lbl.gov/)
 
-### Creating the Container
 
-A step by step series of examples that tell you have to get a development env running
+### Building the Container
 
-Create a singularity container and bootstrap it: 
+The following is a step by step example for creating the container from scratch.   We first create a singularity container and then build all software inside that container. If you already have access to a built container then you can skip to the next section.
 
-```
-singularity create --size 8192 jupyter-casa.img
-singularity bootstrap jupyter-casa.img jupyter-casa-build.def
-```
+First create a container, it will need about 8GB of storage: 
 
-You can execute a command in the shell or open an interactive session:
+`singularity create --size 8192 jupyter-casa.img`
 
-```
-sudo singularity exec --writable jupyter-casa.img chmod 755 /singularity
-sudo singularity run jupyter-casa.img
-sudo singularity shell --writable jupyter-casa.img
-```
+All the procedures for buildng the software, configuring the environment, and defining the behaviour of the container are defined in the `.def` file.  Since this is a lot of stuff, it will take several hours to complete:
+
+`singularity bootstrap jupyter-casa.img jupyter-casa-5.1.1-cli.def`
+
+If you see any errors, you can rerun the bootstrap step incrementally in order to isolate the point of failure.
+
+### Using the Container
+
+You can use this container in several different ways:
+
+1. As a Jupyter kernel for CASA
+
+  Copy the `kernel.json` file to your home directory:
+  `mkdir -p ~/.local/share/jupyter/kernels/jupyter-casa-v5/`
+  `cp idia-container-casakernel/jupyter/kernels/casapy/kernel.json ~/.local/share/jupyter/kernels/jupyter-casa-v5/`
+
+2. Using the embedded CASA terminal - a conventional interactive CASA session
+  `sudo singularity shell --writable jupyter-casa.img`
+  `casa --nogui`
+
+1. Execute a non-interactive script (i.e. `casa -c myscript.py`) - e.g., to execute cluster / HPC jobs
+  `sudo singularity exec --writable jupyter-casa.img casa -c myscript.py`
 
 
 Now that we have build our container, we can set it up as a [jupyter kernel](http://jupyter-client.readthedocs.io/en/latest/kernels.html) by adding a kernel.json file to your existing jupyter or jupyterhub system.
@@ -78,4 +94,10 @@ cp kernel.json $HOME/.local/jupyter/kernels/jupyter-casa-kernel/
 
 ## Acknowledgments
 
-This project is based on a proof of concept by [Aard Keimpema](https://github.com/aardk) at [JIVE](http://www.jive.nl/)
+Based on proof of concept by @aardk ([Aard Keimpema](https://github.com/aardk)) and [JIVE](http://www.jive.nl/)
+
+Built using:
+
+[1] [Jupyter](http://jupyter.org/install)
+[2] [CASA](https://casa.nrao.edu/casa_obtaining.shtml)
+[3] [WSClean](https://sourceforge.net/projects/wsclean/)
