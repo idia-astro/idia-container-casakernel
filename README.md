@@ -59,19 +59,25 @@ Now that we have build our container, we can set it up as a [jupyter kernel](htt
 1. **As a Jupyter kernel for CASA**
 
     Copy the `kernel.json` file to your home directory:
+    
     `mkdir -p $HOME/.local/share/jupyter/kernels/jupyter-casa-kernel/`
+    
     `cp idia-container-casakernel/jupyter/kernels/casapy/kernel.json ~/.local/share/jupyter/kernels/jupyter-casa-kernel/`
+    
     Then start a jupyter notebook session and choose the new kernel, 'jupyter-casa-kernel'.
 
 2. **Using the embedded CASA terminal** -- 
 
     Run CASA using the conventional interactive CASA session.  First invoke a singularity shell session, then start the casa interactive terminal in the normal way:
+    
     `sudo singularity shell --writable jupyter-casa.img`
+    
     `casa --nogui`
 
 3. **To execute a non-interactive script** 
 
     Run a non-interactive script (i.e. `casa -c myscript.py`) - e.g., to execute cluster / HPC jobs
+    
     `sudo singularity exec --writable jupyter-casa.img casa -c myscript.py`
 
 
