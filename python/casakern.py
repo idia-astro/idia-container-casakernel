@@ -265,7 +265,8 @@ for info in [ (['dbus-daemon'],'dbus'),
 
 print "CASA Version " + casa['build']['version'] + "\n  Compiled on: " + casa['build']['time']
 
-a = [] + sys.argv             ## get a copy from goofy python
+# Supress the GUI for Jupyter kernel
+a = ['--nogui'] + sys.argv             ## get a copy from goofy python
 a.reverse( )
 ##
 ## A session configuration 'casa.conf' now included in casa tree...
@@ -1293,11 +1294,19 @@ T     = True
 false = False
 F     = False
 
+# Case where casapy is run non-interactively
+try:
+   import IPython
+except ImportError, e:
+   print 'Failed to load IPython: ', e
+   exit(1)
+
 
 # setup available tasks
 #
 from math import *
-from tasks import *
+from tasks_wrapped import *
+#from tasks import *
 from parameter_dictionary import *
 from task_help import *
 
@@ -1369,64 +1378,6 @@ ipythonlog = 'ipython-'+time.strftime("%Y%m%d-%H%M%S", time.gmtime())+'.log'
 
 ''' 
 ----------------------------------------------------------------------------------------
-Interactive shell 
-	Set up an interactive python instance embedded in a casa environment.
-
-	Command line arguments:
-		'-c CODE' command line argument followed by one or more lines of code 
-		'-c casa_script.py' cli argument followed by an existing file will execute that 
-			file then exit
-----------------------------------------------------------------------------------------
-'''
- 
-from IPython.terminal.embed import InteractiveShellEmbed
-from traitlets.config.loader import Config
-from IPython.terminal.prompts import Prompts, Token
-
-
-class CustomPrompt(Prompts):
-	def in_prompt_tokens(self, cli=None):
-		return [
-			(Token.Prompt, 'CASA <'),
-			(Token.PromptNum, str(self.shell.execution_count)),
-			(Token.Prompt, '>: '),
-		]
-	def out_prompt_tokens(self):
-		return [
-			(Token.OutPrompt, 'Out<'),
-			(Token.OutPromptNum, str(self.shell.execution_count)),
-			(Token.OutPrompt, '>: '),
-		]
-
-cfg = Config()
-
-cfg.TerminalInteractiveShell.prompts_class=CustomPrompt
-cfg.TerminalInteractiveShell.banner1=''
-cfg.TerminalInteractiveShell.autocall=2
-cfg.TerminalInteractiveShell.colors=__ipython_colors
-cfg.TerminalInteractiveShell.quiet=True
-# 		cfg.TerminalInteractiveShell.logfile=ipythonlog
-
-cmd_ex = ''
-
-if casa['flags'].has_key('-c') :
-	if os.path.exists( casa['flags']['-c'] ) :
-		print "Executing python script: {}".format(casa['flags']['-c'])
-		cmd_ex = 'execfile("'+ casa['flags']['-c'] +'")'
-	else:
-		cmd_ex = casa['flags']['-c']
-# else:
-# 	if(thelogfile != 'null') :
-# 		cfg.TerminalInteractiveShell.logappend=ipythonlog
-
-ipshell = InteractiveShellEmbed(user_ns=globals(), config=cfg)
-
-# ----------------------------------------------------------------------------------------
-
-
-
-''' 
-----------------------------------------------------------------------------------------
 CASA log setup 
 ----------------------------------------------------------------------------------------
 ''' 
@@ -1491,74 +1442,56 @@ import shutil
 if os.environ.has_key('_PYTHONPATH'):
     sys.path.extend(os.getenv('_PYTHONPATH').split(':'))
 
-###
-### Initialize the crash dump feature
-###
 
-import signal
-import tempfile
+'''
+----------------------------------------------------------------------------------------
+CASA kernel
+----------------------------------------------------------------------------------------
+'''
+
+from ipykernel.ipkernel import IPythonKernel
+
+class CasapyKernel(IPythonKernel):
+    implementation = 'Casapy'
+    implementation_version = '1.0'
+    language = 'python'
+    language_version = '2.0'
+    language_info = {'mimetype': 'text/x-python', 'name': 'python'}
+    banner = "Casa wrapper for jupyter"
+    logfile = open(casa['files']['logfile'], 'r')
+
+    def __init__(self, **kwargs):
+        super(CasapyKernel, self).__init__(**kwargs)
+        self.do_execute('%matplotlib inline', True, False, {}, False)
+
+    def do_execute(self, code, silent, store_history=True, user_expressions=None,
+                   allow_stdin=False):
+        result = IPythonKernel.do_execute(self, code, silent, store_history, user_expressions, allow_stdin)
+        # Traverse log, this is not ideal. It would be better to have our own logger application and
+        # use that to obtain logging information.
+        loglines = []
+        logfile = self.logfile
+        line = logfile.readline()
+        while line != "":
+            task = line.split()[3].split(':')[0]
+            if task != 'casa':
+                loglines.append(line)
+            line = logfile.readline()
+        # Display log messages
+        if len(loglines) > 0:
+            button_id = str(time.time()).replace('.', '_') # Make sure all IDs are unique
+            html_code = '<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#log' + button_id + \
+                   '">Show log</button> <div id="log' + button_id + '" class="collapse">' + "<br>".join(loglines) + '</div>'
+            IPython.display.display_html(html_code, raw=True)
+        return result
+
 
 try:
-    temporaryDirectory = tempfile.gettempdir()
-    posterApp = casa['helpers']['crashPoster']
-    if posterApp is None: posterApp = "" # handle case where it wasn't found
-    postingUrl = "https://casa.nrao.edu/cgi-bin/crash-report.pl"
-    theLogFile = casa['files']['logfile']
-#     message = casac.utils()._crash_reporter_initialize(temporaryDirectory, posterApp, postingUrl)
-    message = casac.utils()._crash_reporter_initialize(temporaryDirectory, posterApp, postingUrl, theLogFile)
-    if len (message) > 0:
-        if message != "no-op":
-            print ("***\n*** Crash reporter failed to initialize: " + message)
+	from ipykernel.kernelapp import IPKernelApp
+except ImportError:
+	from IPython.kernel.zmq.kernelapp import IPKernelApp
 
-except Exception as e:
-    print "***\n*** Crash reporter initialization failed.\n***"
-    print "*** exception={0}\n***".format (e)
+IPKernelApp.user_ns = globals()
+IPKernelApp.launch_instance(kernel_class=CasapyKernel)
 
-
-
-
-
-# --- Launch python embedded shell or run script ---
-
-if casa['flags'].has_key('-c') :
-	print "Running command line script..."
-	ipshell.ex( cmd_ex )
-else:
-	print "Entering interactive terminal..."
-	ipshell()
-
-
-
-''' 
-----------------------------------------------------------------------------------------
-Exit CASA environment 
-----------------------------------------------------------------------------------------
-''' 
-
-if(os.uname()[0] == 'Darwin') and type(casa) == "<type 'dict'>" and casa['flags'].has_key('--maclogger') :
-    os.system("osascript -e 'tell application \"Console\" to quit'")
-for pid in logpid: 
-    #print 'pid: ',pid
-    os.kill(pid,9)
-
-for x in os.listdir('.'):
-    if x.lower().startswith('casapy.scratch-'):
-        if os.path.isdir(x):
-            #shutil.rmtree(x, ignore_errors=True)
-            os.system("rm -rf %s" % x)
-            #print "Removed: ", x, "\n"
-
-## leave killing off children to the watchdog...
-## so everyone has a chance to die naturally...
-print "leaving casa..."
-def excepthook(exctype, value, tb):
-    print "-----------------------------------------------------------------------------"
-    print "error during shutdown"
-    print "-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --"
-    print exctype
-    print value
-    print "-----------------------------------------------------------------------------"
-
-sys.excepthook = excepthook
-sys.exit(0)
 

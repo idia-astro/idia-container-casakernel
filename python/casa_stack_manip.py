@@ -11,7 +11,8 @@ def stack_find(symbol, level='stack') :
             if a[k][1].startswith("<ipython-input-") or \
                string.find(a[k][1], 'ipython console') > -1 or \
                string.find(a[k][1],"/casapy.py") > -1 or \
-               string.find(a[k][1],"casatasks.py") > -1 or \
+               string.find(a[k][1],"/casatasks.py") > -1 or \
+               string.find(a[k][1],"/casakern.py") > -1 or \
                string.find(a[k][1],"/casa.py") > -1 or \
                string.find(a[k][1],"mpi4casapy.py") > -1:
                 stacklevel=k
