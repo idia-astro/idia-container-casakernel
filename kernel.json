@@ -1,0 +1,6 @@
+{
+   "argv": ["/users/jbochenek/containers/jupyter-casa-latest.img", "-m", "casakern", "-f", "{connection_file}"],
+   "display_name": "jupyter-casa-v5",
+   "language": "python",
+   "mimetype": "text/x-python"
+}
