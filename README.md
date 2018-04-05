@@ -90,7 +90,8 @@ Now that we have build our container, we can set it up as a [jupyter kernel](htt
     The subsequent CASA tasks will be limited to 4 threads and will use only 4x CPU. 
 
     The FITs converter to is also available in the current build (via a conda environment enabling python3). It can be accessed from a notebook environment using a system call:
-    '''
+
+    ```
     !fits2hdf5
     subprocess.check_output(['fits2hdf5', ''])
     ```
