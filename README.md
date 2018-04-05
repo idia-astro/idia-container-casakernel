@@ -80,7 +80,14 @@ Now that we have build our container, we can set it up as a [jupyter kernel](htt
     
     `sudo singularity exec --writable jupyter-casa.img casa -c myscript.py`
 
+    Some CASA tasks invoke libraries which natively use OpenMP for multithreading linear algebra operations (such as LaPACK and BLAS).  The number of processes corresponds to the number of cores available, so when running certain CASA on a node with a large number of cores users sometimes observe a large number of processes spawned.  You can set the number of threads used by setting the OMP_NUM_THREADS environment variable.  Using a singularity container to drive a Jupyter kernel, the environment variable must be set inside the container context.  This can be done from the notebook at runtime, using, e.g.:
+    
+    ```
+    import os
+    os.environ['OMP_NUM_THREADS'] = '4'
+    ```
 
+    The subsequent CASA tasks will be limited to 4 threads and will use only 4x CPU. 
 
 ### Tests
 
