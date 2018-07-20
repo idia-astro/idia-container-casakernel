@@ -375,40 +375,7 @@ if os.path.exists( casa['dirs']['rc'] + '/prelude.py' ) :
         print 'Could not execute initialization file: ' + casa['dirs']['rc'] + '/prelude.py'
         sys.exit(1)
 
-## ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
-## on linux set up a dbus-daemon for casa because each
-## x-server (e.g. Xvfb) gets its own dbus session...
-## ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
-if casa['helpers']['dbus'] is not None :
 
-    argv_0_path = os.path.dirname(os.path.abspath(sys.argv[0]))
-    dbus_path = os.path.dirname(os.path.abspath(casa['helpers']['dbus']))
-
-    (r,w) = os.pipe( )
-
-    if os.fork( ) == 0 :
-        os.close(r)
-        signal.signal(signal.SIGINT, signal.SIG_IGN)
-        signal.signal(signal.SIGHUP, signal.SIG_IGN)
-        ## close standard input to avoid terminal interrupts
-        sys.stdin.close( )
-        os.close(0)
-        args = [ 'casa-dbus-daemon' ]
-        args = args + ['--print-address', str(w)]
-        if dbus_conf is not None and os.path.exists(dbus_conf) :
-            args = args + ['--config-file',dbus_conf]
-        else:
-            args = args + ['--session']
-        os.execvp(casa['helpers']['dbus'],args)
-        sys.exit
-        
-    os.close(w)
-    dbus_address = os.read(r,200)
-    dbus_address = dbus_address.strip( )
-    os.close(r)
-    if len(dbus_address) > 0 :
-        os.putenv('DBUS_SESSION_BUS_ADDRESS',dbus_address)
-        os.environ['DBUS_SESSION_BUS_ADDRESS'] = dbus_address
 
 
 ipythonenv  = casa['dirs']['rc'] + '/ipython'
