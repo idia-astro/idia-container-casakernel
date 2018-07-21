@@ -7,15 +7,11 @@ with a variety of operating systems and environments isn't necessary when using 
 and removing it streamlines the startup and execution process, saving time and resources. 
 
 Example:
-    Compute the payment on a loan::
+    list metata for an MS dataset:
 
-        $ python interest_calculator.py
+        $ import casatasks
+        $ casatasks.listobs('somefile.ms')
 
-Section breaks are created by resuming unindented text. Section breaks
-are also implicitly created anytime a new section starts.
-
-Todo:
-    * Do total interest
 """
 
 import os
@@ -192,15 +188,10 @@ def wrap_listfile(task):
     return wrapped_task
 
 
-# print "loading module taskinit"
 # from taskinit import *
-# print "loading math"
 # from math import *
-# print "loading tasks_wrapped"
 # from tasks_wrapped import *
-print "loading parameter_dictionary"
 from parameter_dictionary import *
-print "loading task_help"
 from task_help import *
 
 # 
@@ -209,8 +200,6 @@ from task_help import *
 # 
 # print "task wrapper"
 # from tasks_wrapped import *
-
-print "loading all modules"
 
 from accum import  accum
 from applycal import  applycal
@@ -237,7 +226,7 @@ from exportasdm import  exportasdm
 from exportfits import  exportfits
 from exportuvfits import  exportuvfits
 from feather import  feather
-from find import  find
+#from find import find
 from fixplanets import  fixplanets
 from fixvis import  fixvis
 from flagcmd import  flagcmd
@@ -338,15 +327,13 @@ from wvrgcal import  wvrgcal
 from virtualconcat import  virtualconcat
 from vishead import  vishead
 from visstat import  visstat
-from visstat2 import  visstat2
+#from visstat2 import  visstat2
 from widebandpbcor import  widebandpbcor
 from widefield import  widefield
 
 from split import  split
 from hanningsmooth import  hanningsmooth
 from tget import *
-
-print "done loading modules"
 
 
 # from IPython.terminal.embed import InteractiveShellEmbed

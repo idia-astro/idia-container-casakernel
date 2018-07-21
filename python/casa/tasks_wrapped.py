@@ -122,7 +122,7 @@ from exportasdm import  exportasdm
 from exportfits import  exportfits
 from exportuvfits import  exportuvfits
 from feather import  feather
-from find import  find
+#from find import  find
 from fixplanets import  fixplanets
 from fixvis import  fixvis
 from flagcmd import  flagcmd
@@ -223,7 +223,7 @@ from wvrgcal import  wvrgcal
 from virtualconcat import  virtualconcat
 from vishead import  vishead
 from visstat import  visstat
-from visstat2 import  visstat2
+# from visstat2 import  visstat2
 from widebandpbcor import  widebandpbcor
 from widefield import  widefield
 

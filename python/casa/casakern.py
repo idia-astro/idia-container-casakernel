@@ -267,12 +267,6 @@ print "CASA Version " + casa['build']['version'] + "\n  Compiled on: " + casa['b
 # Supress the GUI for Jupyter kernel
 a = ['--nogui'] + sys.argv             ## get a copy from goofy python
 a.reverse( )
-##
-## A session configuration 'casa.conf' now included in casa tree...
-##
-dbus_conf = __casapath__ + "/etc/dbus/casa.conf"
-if not os.path.exists(dbus_conf):
-    dbus_conf = __casapath__ + "/Resources/dbus/casa.conf"
 
 __ipython_colors = 'LightBG'
 while len(a) > 0:
