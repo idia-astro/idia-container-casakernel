@@ -1,0 +1,204 @@
+Bootstrap: debootstrap
+MirrorURL: http://archive.ubuntu.com/ubuntu/
+OSVersion: bionic
+Include: software-properties-common
+%post
+	# --- Installation of pre-requisite packages ---
+	apt-get update -y 
+	apt-get install -y wget vim apt-utils
+
+	# Add repositories
+	apt-get install software-properties-common
+	add-apt-repository -s ppa:kernsuite/kern-5
+	apt-add-repository multiverse 
+	apt-add-repository restricted
+	apt-get update
+
+	mkdir /users /scratch /data
+
+	export LC_ALL=C
+	export LC_CTYPE="en_US.UTF-8"
+
+	apt-get install -y python3-pip git cmake
+
+	# To allow plotms w/out x11
+	apt-get install -y xvfb
+
+	pip3 install numpy scipy matplotlib ipython jupyter pandas sympy nose pymongo psutil ipywidgets ipyparallel bokeh scikit-learn
+	# pip3 install astropy h5py pyfits pytest-astropy
+
+	# ================================================================================
+	# Build CASA 
+	# ================================================================================
+
+	export CASAROOT=/usr/local/casa
+	export CASA_ARCH=linux64
+	export HOST_CPU_CORES=8
+	export CASA_BUILD_TYPE=Release
+	
+	mkdir -p $CASAROOT
+	echo $CASAROOT
+
+	git clone -b release/5.4.1 https://open-bitbucket.nrao.edu/scm/casa/casa.git $CASAROOT
+	cd $CASAROOT
+	git submodule update --init casacore
+
+	# Minimal copy of CASA data ()
+	# Need to install git LFS to download casa-data repo (https://github.com/git-lfs/git-lfs/wiki/Installation)
+	apt-get install -y git-lfs
+	git lfs install
+
+	git clone --no-checkout https://open-bitbucket.nrao.edu/scm/casa/casa-data.git $CASAROOT/data
+	cd $CASAROOT/data
+	git show HEAD:distro | bash
+		# remove .git files saves over 600MB (via aardk https://github.com/aardk/jupyter-casa/blob/master/docker/Dockerfile)
+	rm -rf .git ../git
+
+	apt-get install -y build-essential cmake gfortran g++ libncurses5-dev libreadline-dev flex bison libblas-dev liblapacke-dev wcslib-dev libcfitsio-dev
+	apt-get install -y libhdf5-dev libfftw3-dev python-numpy-dev libboost-python-dev libpython3.6-dev libqt4-dev
+
+	# --- Build CasaCORE ---
+	cd $CASAROOT/casacore/; mkdir build; cd build	
+	cmake .. -DCASA_BUILD=1 -DCMAKE_BUILD_TYPE=$CASA_BUILD_TYPE -DCMAKE_INSTALL_PREFIX=$CASAROOT/$CASA_ARCH -DBoost_NO_BOOST_CMAKE=1 -DUseCasacoreNamespace=1 -DBUILD_PYTHON=1 -DDATA_DIR=$CASAROOT/data -DCFITSIO_INCLUDE_DIR=/usr/include -DCXX11=1 # -DCXX11="ON"
+	make -j $HOST_CPU_CORES &> compileLink.log || cat compileLink.log | strings | grep Error compileLink.log | grep -v Scanning | grep -v Building | grep -v Built | grep -v Linking
+	make test &> test.log || cat test.log | strings | grep Failed test.log
+	# 90% tests passed, 53 tests failed out of 535
+	make install &> install.log || grep Error install.log  | grep -v Installing | grep -v Up-to-date | grep -v tFITSErrorImage
+
+	
+	cmake .. -DCASA_BUILD=ON -DCMAKE_BUILD_TYPE=$CASA_BUILD_TYPE -DCMAKE_INSTALL_PREFIX=$CASAROOT/$CASA_ARCH -DDATA_DIR=$CASAROOT/data -DUSE_THREADS=ON -DCFITSIO_INCLUDE_DIR=/usr/include/cfitsio -DUSE_FFTW3=ON -DCFITSIO_INCLUDE_DIR=/usr/include -DUSE_HDF5=ON -DBUILD_PYTHON=ON
+	make -j $HOST_CPU_CORES
+	make install
+	
+
+	# --- Build Casa Code ---
+	cd $CASAROOT/code/; mkdir build -p; cd build
+
+	# casaCODE requirements
+	apt-get install -y libboost-regex-dev libboost-program-options-dev libboost-thread-dev libboost-serialization-dev libboost-filesystem-dev libboost-system-dev pgplot5 wcslib-dev ant antlr libantlr-dev libantlr-java libjdom1-java libjfreechart-java libdbus-1-dev libdbus-c++-dev 
+	apt-get install -y libxml2-dev libxslt1.1 libxslt1-dev libqwt-dev libxerces-c-dev libsqlite3-dev libgsl-dev
+	apt-get install -y --allow-unauthenticated rpfits 
+
+	# --- External Build Requirements ---
+	
+	apt-get install -y doxygen libeigen3-dev unzip
+
+	mkdir $CASAROOT/externals 
+	cd $CASAROOT/externals
+
+	# Build libsakura 
+	git clone https://github.com/grimmer0125/libsakura
+	wget https://github.com/google/googletest/archive/release-1.7.0.tar.gz
+	tar -xvf release-1.7.0.tar.gz
+	
+	cd libsakura/
+	ln -s /usr/local/casa/externals/googletest-release-1.7.0/ gtest
+	# fix problem due to compiler version error (change 'isnan' to 'std::isnan')
+	sed -i -e "s/std::isnan/isnan/g" test/statistics.cc
+	sed -i -e "s/isnan/std::isnan/g" test/statistics.cc
+	mkdir -p build; cd build
+	cmake ..
+	make
+	make apidoc
+	make install
+
+	# Compile Casa 
+
+	cd $CASAROOT/code/; mkdir build -p; cd build	
+
+# 	sed -i -e "s/3\.2/3\.3/g" /usr/local/casa/code/CMakeLists.txt
+	mkdir gtest	breakpad
+	cp /usr/local/casa/externals/release-1.7.0.tar.gz /usr/local/casa/code/build/gtest/googletest-release-1.7.0.tar.gz
+	cd breakpad
+    wget https://casa.nrao.edu/download/devel/breakpad/breakpad-from-google-180213-patch2.tgz
+    tar zxvf breakpad-from-google-180213-patch2.tgz
+    cd ..
+	cmake .. -DCMAKE_BUILD_TYPE=$CASA_BUILD_TYPE -DINTERACTIVE_ITERATION=1 -DCMAKE_INSTALL_PREFIX=$CASAROOT/$CASA_ARCH
+# 	cmake .. -DCMAKE_BUILD_TYPE=$CASA_BUILD_TYPE 						   -DCMAKE_INSTALL_PREFIX=$CASAROOT/$CASA_ARCH -DUseCrashReporter=0 -DBoost_NO_BOOST_CMAKE=1 '-DEXTRA_C_FLAGS=-DPG_PPU' -DUseCasacoreNamespace=1 -DUSE_ALMAWVR=True  
+
+	make -j $HOST_CPU_CORES
+	make install
+
+
+	# Build GCWrap
+	apt-get install -y swig
+
+	cd $CASAROOT/gcwrap; mkdir build; cd build
+	#cmake .. -Darch=$CASA_ARCH -DCMAKE_INSTALL_PREFIX=$CASAROOT/$CASA_ARCH -DPYTHON_LIBNAME=2.7 -DCMAKE_BUILD_TYPE=$CASA_BUILD_TYPE -DUseCrashReporter=0 
+	cmake .. -Darch=$CASA_ARCH -DCMAKE_INSTALL_PREFIX=$CASAROOT/$CASA_ARCH -DPYTHON_LIBNAME=2.7 -DCMAKE_BUILD_TYPE=$CASA_BUILD_TYPE -DINTERACTIVE_ITERATION=1
+
+	make -j $HOST_CPU_CORES
+	make install
+	
+	# Build ASAP
+	git clone https://open-bitbucket.nrao.edu/scm/casa/casa-asap.git
+	cd $CASAROOT/casa-asap; mkdir build; cd build
+	#cmake .. -Darch=$CASA_ARCH -DCMAKE_INSTALL_PREFIX=$CASAROOT/$CASA_ARCH -DPYTHON_LIBNAME=2.7 -DCMAKE_BUILD_TYPE=$CASA_BUILD_TYPE
+	cmake .. -Darch=$CASA_ARCH -DCMAKE_INSTALL_PREFIX=$CASAROOT/$CASA_ARCH -DPYTHON_LIBNAME=2.7 -DCMAKE_BUILD_TYPE=$CASA_BUILD_TYPE
+	make -j $HOST_CPU_CORES
+	make install
+
+
+	# Post-install tasks
+	source $CASAROOT/casainit.sh
+	export CASAROOT=/usr/local/casa
+	export CASA_ARCH=linux64
+	export CASAPATH="$CASAROOT $CASA_ARCH"
+	source ${CASAROOT}/casainit.sh
+	sed -i -e "s/usr\/lib64\/casapy/usr/" $CASAROOT/linux64/bin/casa
+	export CASAPATH="$CASAROOT $CASA_ARCH"
+	
+	cd ~
+	git clone https://github.com/idia-astro/idia-container-casakernel.git jupyter_casa_files
+	cp jupyter_casa_files/python/casa/* $CASAROOT/linux64/lib/python2.7/
+
+	# Install python 2.7 stuff - remove after upgrading casatasks to py3
+	apt-get install -y python-pip
+	pip install numpy scipy matplotlib 
+	apt-get install -y python-tk
+	pip install ipython scipy 
+
+
+	# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+	
+	rm -rf code/build
+	rm -rf gcWrap \
+    rm -rf casa-asap \
+    rm -rf code 
+    
+    
+    # Temporary extras for py2
+    apt-get install python-mpi4py
+    pip install ipyparallel, dask[complete], bokeh
+	
+	# Test
+	# listobs('/data/projects/deep/1491550051.ms')
+
+
+	# Repair broken CASA shutdown hook problem: 
+
+	# /usr/local/casa/linux64/lib/python2.7/init_tools.py:7		#from casa_system import casa
+	# /usr/local/casa/linux64/lib/python2.7/task_plotms.py:4	#from casa_system import procmgr
+
+	# Extra stuff
+	#	apt-get install -y meqtrees
+
+
+%environment
+	export LC_ALL=C
+	export LC_CTYPE="en_US.UTF-8"
+	unset XDG_RUNTIME_DIR
+	
+	export CASAROOT=/usr/local/casa
+	export CASA_ARCH=linux64
+	export CASAPATH="$CASAROOT $CASA_ARCH"
+	export PATH=$CASAROOT/$CASA_ARCH/bin:$PATH
+	export PYTHONPATH="$CASAROOT/$CASA_ARCH/lib/python2.7/:$PYTHONPATH"
+	export LD_LIBRARY_PATH="$CASAROOT/$CASA_ARCH/lib:$LD_LIBRARY_PATH"
+	
+	Xvfb :99 &
+	export DISPLAY=:99
+	
+%runscript
+	#!/bin/sh
+	/usr/bin/python "$@"
