@@ -132,6 +132,21 @@ else :
         else:
             raise RuntimeError, "Unable to find the XML constraints directory in your CASAPATH"
 
+##
+## this is filled via register_builtin (from casa_builtin.py)
+##
+casa_builtins = { }
+
+##
+## this is filled via add_shutdown_hook (from casa_shutdown.py)
+##
+casa_shutdown_handlers = [ ]
+
+### this should (perhaps) be placed in an 'atexit' hook...
+for handler in casa_shutdown_handlers:
+    handler( )
+
+
 
 
 # ----------------------------------------------------------------------------------------
@@ -204,20 +219,20 @@ from task_help import *
 from accum import  accum
 from applycal import  applycal
 from asdmsummary import  asdmsummary
-from autoclean import  autoclean
+# from autoclean import  autoclean
 from bandpass import  bandpass
 from blcal import  blcal
-from boxit import  boxit
+# from boxit import  boxit
 from browsetable import  browsetable
 from calstat import  calstat
 from caltabconvert import  caltabconvert
 from clean import  clean
 from clearcal import  clearcal
-from clearplot import  clearplot
+# from clearplot import  clearplot
 from clearstat import  clearstat
 from concat import  concat
 from conjugatevis import  conjugatevis
-from csvclean import  csvclean
+# from csvclean import  csvclean
 from cvel import  cvel
 from cvel2 import  cvel2
 from deconvolve import  deconvolve
@@ -248,7 +263,7 @@ from impbcor import  impbcor
 from importatca import  importatca
 from importasap import  importasap
 from importasdm import  importasdm
-from importevla import  importevla
+# from importevla import  importevla
 from importfits import  importfits
 from importfitsidi import  importfitsidi
 from importgmrt import  importgmrt
@@ -275,18 +290,18 @@ from listpartition import  listpartition
 from listsdm import  listsdm
 from listvis import  listvis
 #from makemask import  makemask
-from mosaic import  mosaic
+# from mosaic import  mosaic
 from msview import  msview
 from mstransform import  mstransform
 from msuvbin import  msuvbin
-from oldhanningsmooth import  oldhanningsmooth
+# from oldhanningsmooth import  oldhanningsmooth
 from oldsplit import  oldsplit
 from plotants import  plotants
 from plotbandpass import  plotbandpass
 from plotcal import  plotcal
 from plotms import  plotms
 # plotms = wrap_plotms(plotms)
-from plotuv import  plotuv
+# from plotuv import  plotuv
 from plotweather import  plotweather
 from plotprofilemap import  plotprofilemap
 from partition import  partition
@@ -297,7 +312,7 @@ from rmfit import  rmfit
 from rmtables import  rmtables
 from sdgaincal import  sdgaincal
 from setjy import  setjy
-from ssoflux import  ssoflux
+# from ssoflux import  ssoflux
 from simalma import  simalma
 from simobserve import  simobserve
 from simanalyze import  simanalyze
@@ -329,7 +344,7 @@ from vishead import  vishead
 from visstat import  visstat
 #from visstat2 import  visstat2
 from widebandpbcor import  widebandpbcor
-from widefield import  widefield
+# from widefield import  widefield
 
 from split import  split
 from hanningsmooth import  hanningsmooth

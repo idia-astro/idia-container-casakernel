@@ -21,7 +21,7 @@ def stack_find(symbol, level='stack') :
 
         myf=sys._getframe(stacklevel).f_globals
 
-        if myf.has_key(symbol):
+        if myf.has_key(symbol):  #and myf.has_key(label) :
             return myf[symbol]
 
         else:
@@ -29,7 +29,8 @@ def stack_find(symbol, level='stack') :
 
     elif level == "root":
         for k in range(len(a)):
-            if string.find(a[k][1],"start_casa.py") > -1:
+            if string.find(a[k][1],"start_casa.py") > -1 or \
+               string.find(a[k][1],"casatasks.py") > -1:
                 stacklevel=k
                 # jagonzal: Take the first level that matches the requirement
                 break
@@ -55,6 +56,8 @@ def stack_frame_find(level='stack') :
             if a[k][1].startswith("<ipython-input-") or \
                string.find(a[k][1], 'ipython console') > -1 or \
                string.find(a[k][1],"/casapy.py") > -1 or \
+               string.find(a[k][1],"/casatasks.py") > -1 or \
+               string.find(a[k][1],"/casakern.py") > -1 or \
                string.find(a[k][1],"/casa.py") > -1 or \
                string.find(a[k][1],'/MPICommandServer.py') > -1 or \
                string.find(a[k][1],"mpi4casapy.py") > -1:
